@@ -1,0 +1,7 @@
+python3:
+  build: .
+  working_dir: "/root/"
+  tty: true
+  volumes:
+    #- ./:/myapp
+    - /e/python/pleiades/workspace:/myapp
