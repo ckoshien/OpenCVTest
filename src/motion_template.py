@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 
 # ビデオデータ
-VIDEO_DATA = "test.mp4"
-outputFile="output.mp4"
+VIDEO_DATA = "E:\\python\\pleiades\\workspace\\OpenCVTest\\src\\test.mp4"
+outputFile="E:\\python\\pleiades\\workspace\\OpenCVTest\\src\\output.mp4"
 # Esc キー
 ESC_KEY = 0x1b
 # モーションの残存期間(sec)
@@ -53,7 +53,8 @@ while(end_flag):
     hist_color = np.array(np.clip((motion_history - (proc_time - DURATION)) / DURATION, 0, 1) * 255, np.uint8)
 
     # グレースケール変換
-    hist_gray = cv2.cvtColor(hist_color, cv2.COLOR_GRAY2BGR)
+    #hist_gray = cv2.cvtColor(hist_color, cv2.COLOR_GRAY2BGR)
+    hist_gray = hist_color
 
     # モーション履歴画像の変化方向の計算
     #   ※ orientationには各座標に対して変化方向の値（deg）が格納されます
@@ -108,7 +109,18 @@ while(end_flag):
     #          0)
 
     # モーション画像を表示
-    cv2.imshow("motion", hist_gray)
+    width_k = 0
+    height_k = 0
+    fake_color = np.empty_like(hist_color)
+    while width_k < width:
+        while height_k < height:
+            #if hist_gray[width_k][height_k] != 0 :
+            #print(hist_gray[width_k][height_k])
+            fake_color[width_k][height_k] = 10
+            height_k = height_k + 1
+        width_k = width_k + 1
+    #cv2.addWeighted(hist_gray,0.4,frame_next,0.1,0)
+    cv2.imshow("motion", fake_color)
     resizedImage = cv2.resize(hist_gray, (704, 396))
     out.write(resizedImage)
 
