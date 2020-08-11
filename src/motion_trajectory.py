@@ -9,7 +9,7 @@ outputFile="output.mp4"
 # Esc キー
 ESC_KEY = 0x1b
 # モーションの残存期間(sec)
-DURATION = 1.0
+DURATION = 2.0
 # 全体の方向を表示するラインの長さ
 LINE_LENGTH_ALL = 60
 # 座標毎の方向を表示するラインの長さ
@@ -25,7 +25,7 @@ cv2.namedWindow("motion")
 outFourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 video = cv2.VideoCapture(VIDEO_DATA)
 out = cv2.VideoWriter(outputFile, outFourcc, 30.0,
-                          (704, 396))  # 出力先のファイルを開く
+                          (1280, 720))  # 出力先のファイルを開く
 
 # 最初のフレームの読み込み
 end_flag, frame_next = video.read()
@@ -109,7 +109,7 @@ while(end_flag):
 
     # モーション画像を表示
     cv2.imshow("motion", hist_gray)
-    resizedImage = cv2.resize(hist_gray, (704, 396))
+    resizedImage = cv2.resize(hist_gray, (1280, 720))
     out.write(resizedImage)
 
     # Escキー押下で終了
