@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 import time
 import math
 import cv2
