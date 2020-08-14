@@ -1,1 +1,1 @@
-opencv-python
+opencv-python==2.4.9
