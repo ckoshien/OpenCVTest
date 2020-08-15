@@ -1,1 +1,1 @@
-web: gunicorn opencv-cap:app
+web: python src/motion_trace.py runserver
