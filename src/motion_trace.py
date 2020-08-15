@@ -5,6 +5,12 @@ import math
 import cv2
 import numpy as np
 
+def index(request):
+    r = requests.get('http://httpbin.org/status/418')
+    print(r.text)
+    return HttpResponse('<pre>' + r.text + '</pre>')
+
+
 # ビデオデータ
 VIDEO_DATA = "test.mp4"
 outputFile="output.mp4"
