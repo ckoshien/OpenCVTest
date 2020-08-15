@@ -4,6 +4,7 @@ import time
 import math
 import cv2
 import numpy as np
+import requests
 
 def index(request):
     r = requests.get('http://httpbin.org/status/418')
