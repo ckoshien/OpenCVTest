@@ -22,7 +22,7 @@ GRID_WIDTH = 40
 CIRCLE_RADIUS = 2
 
 # 表示ウィンドウの初期化
-cv2.namedWindow("motion")
+#cv2.namedWindow("motion")
 # ビデオデータの読み込み
 outFourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 video = cv2.VideoCapture(VIDEO_DATA)
@@ -111,7 +111,7 @@ while(end_flag):
     dst=cv2.addWeighted(frame_next,1,hist_gray,0.5,0)
 
     # モーション画像を表示
-    cv2.imshow("motion", dst)
+    #cv2.imshow("motion", dst)
     resizedImage = cv2.resize(dst, (1280, 720))
     out.write(resizedImage)
 
