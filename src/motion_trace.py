@@ -4,13 +4,6 @@ import time
 import math
 import cv2
 import numpy as np
-import requests
-
-def index(request):
-    r = requests.get('http://httpbin.org/status/418')
-    print(r.text)
-    return HttpResponse('<pre>' + r.text + '</pre>')
-
 
 # ビデオデータ
 VIDEO_DATA = "test.mp4"
@@ -28,13 +21,17 @@ GRID_WIDTH = 40
 # 方向を表示するラインの丸の半径
 CIRCLE_RADIUS = 2
 
+
+
 # 表示ウィンドウの初期化
-#cv2.namedWindow("motion")
+cv2.namedWindow("motion")
 # ビデオデータの読み込み
 outFourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
 video = cv2.VideoCapture(VIDEO_DATA)
+W = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+H = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 out = cv2.VideoWriter(outputFile, outFourcc, 30.0,
-                          (1280, 720))  # 出力先のファイルを開く
+                          (W, H))  # 出力先のファイルを開く
 
 # 最初のフレームの読み込み
 end_flag, frame_next = video.read()
@@ -118,8 +115,8 @@ while(end_flag):
     dst=cv2.addWeighted(frame_next,1,hist_gray,0.5,0)
 
     # モーション画像を表示
-    #cv2.imshow("motion", dst)
-    resizedImage = cv2.resize(dst, (1280, 720))
+    cv2.imshow("motion", dst)
+    resizedImage = cv2.resize(dst, (W, H))
     out.write(resizedImage)
 
     # Escキー押下で終了
