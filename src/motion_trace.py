@@ -11,7 +11,7 @@ outputFile="output.mp4"
 # Esc キー
 ESC_KEY = 0x1b
 # モーションの残存期間(sec)
-DURATION = 1.0
+DURATION = 2.0
 # 全体の方向を表示するラインの長さ
 LINE_LENGTH_ALL = 60
 # 座標毎の方向を表示するラインの長さ
@@ -35,11 +35,12 @@ out = cv2.VideoWriter(outputFile, outFourcc, 30.0,
 
 # 最初のフレームの読み込み
 end_flag, frame_next = video.read()
+count = video.get(cv2.CAP_PROP_FRAME_COUNT)
 height, width, channels = frame_next.shape
 motion_history = np.zeros((height, width), np.float32)
 frame_pre = frame_next.copy()
 
-while(end_flag):
+for frame_index in range(int(count)):
     # フレーム間の差分計算
     color_diff = cv2.absdiff(frame_next, frame_pre)
 
@@ -50,12 +51,12 @@ while(end_flag):
     retval, black_diff = cv2.threshold(gray_diff, 30, 1, cv2.THRESH_BINARY)
 
     # プロセッサ処理時間(sec)を取得
-    proc_time = time.clock()
+    #proc_time = time.clock()
 
     # モーション履歴画像の更新
-    cv2.motempl.updateMotionHistory(black_diff, motion_history, proc_time, DURATION)
+    cv2.motempl.updateMotionHistory(black_diff, motion_history, frame_index, 3)
     # 古いモーションの表示を経過時間に応じて薄くする
-    hist_color = np.array(np.clip((motion_history - (proc_time - DURATION)) / DURATION, 0, 1) * 255, np.uint8)
+    hist_color = np.array(np.clip((motion_history - (frame_index - DURATION*30)) / DURATION*30, 0, 1) * 255, np.uint8)
 
     # グレースケール変換
     hist_gray = cv2.cvtColor(hist_color, cv2.COLOR_GRAY2BGR)
@@ -93,7 +94,7 @@ while(end_flag):
 
 
     # 全体的なモーション方向を計算
-    angle_deg = cv2.motempl.calcGlobalOrientation(orientation, mask, motion_history, proc_time, DURATION)
+    angle_deg = cv2.motempl.calcGlobalOrientation(orientation, mask, motion_history, frame_index, DURATION)
 
     # 全体の動きを黄色い線で描画
     # cv2.circle(hist_gray, \
@@ -114,44 +115,45 @@ while(end_flag):
     dst=cv2.addWeighted(frame_next,1,hist_gray,0.5,0)
 
     # モーション画像を表示
-    cv2.imshow("motion", dst)
+    cv2.imshow('motion', dst)
     resizedImage = cv2.resize(dst, (W, H))
     out.write(resizedImage)
 
     # Escキー押下で終了
     if cv2.waitKey(20) == ESC_KEY:
         break
+    if frame_index > 50 and frame_index < 70:
+            print(cv2.waitKey(0))
+            result = dst
+            for width_i in range(width - 1):
+                for height_i in range(height - 1):
+                    if motion_history[height_i - 1][width_i - 1] < 100 \
+                    and motion_history[height_i - 1][width_i - 1] > 0 \
+                    and (height_i > 200 and height_i < 400) \
+                    and (width_i > 500 and width_i < 850):
+                        print(width_i, height_i, motion_history[height_i - 1][width_i - 1])
+                        cv2.rectangle(
+                            result,
+                            (500,200),
+                            (850,400),
+                            (0,255,0),
+                            3
+                        )
+                        cv2.circle(result, \
+                                (width_i, height_i), \
+                                CIRCLE_RADIUS, \
+                                (0, 255, 0), \
+                                2, \
+                                16, \
+                                0)
+                        #cv2.imshow("result", result)
+                    height_i = height_i + GRID_WIDTH    
+                width_i = width_i + GRID_WIDTH
+            cv2.imwrite('result.png', result)
 
     # 次のフレームの読み込み
     frame_pre = frame_next.copy()
     end_flag, frame_next = video.read()
-result = dst
-#np.full((height, width, 3), 128, dtype=np.uint8)
-for width_i in range(width - 1):
-    for height_i in range(height - 1):
-        if float(motion_history[height_i - 1][width_i - 1]) < 5.2 \
-        and float(motion_history[height_i - 1][width_i - 1]) > 5.1 \
-        and (height_i > 200 and height_i < 400) \
-        and (width_i > 600 and width_i < 850):
-            print(width_i, height_i, motion_history[height_i - 1][width_i - 1])
-            cv2.rectangle(
-                result,
-                (600,200),
-                (850,400),
-                (0,255,0),
-                3
-            )
-            cv2.circle(result, \
-                    (width_i, height_i), \
-                    CIRCLE_RADIUS, \
-                    (0, 255, 0), \
-                    2, \
-                    16, \
-                    0)
-            cv2.imshow("result", result)
-        height_i = height_i + GRID_WIDTH    
-    width_i = width_i + GRID_WIDTH
-cv2.imwrite('result.png', result)
 # 終了処理
 out.release()
 cv2.destroyAllWindows()
