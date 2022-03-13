@@ -4,14 +4,24 @@ import time
 import math
 import cv2
 import numpy as np
+import argparse
 
 # ビデオデータ
 VIDEO_DATA = "test.mp4"
 outputFile="output.mp4"
+
+parser = argparse.ArgumentParser(description='tf-pose-estimation Video')
+parser.add_argument('--mask_width', type=int, default=100)
+parser.add_argument('--mask_height', type=int, default=100)
+parser.add_argument('--mask_start_x', type=int, default=100)
+parser.add_argument('--mask_start_y', type=int, default=100)
+parser.add_argument('--duration', type=int, default=1)
+args = parser.parse_args()
+
 # Esc キー
 ESC_KEY = 0x1b
 # モーションの残存期間(sec)
-DURATION = 1.0
+DURATION = args.duration
 # 全体の方向を表示するラインの長さ
 LINE_LENGTH_ALL = 60
 # 座標毎の方向を表示するラインの長さ
@@ -21,6 +31,10 @@ GRID_WIDTH = 40
 # 方向を表示するラインの丸の半径
 CIRCLE_RADIUS = 2
 
+MASK_HEIGHT = args.mask_height
+MASK_WIDTH = args.mask_width
+MASK_START_X = args.mask_start_x
+MASK_START_Y = args.mask_start_y
 
 
 # 表示ウィンドウの初期化
@@ -40,14 +54,20 @@ motion_history = np.zeros((height, width), np.float32)
 frame_pre = frame_next.copy()
 
 while(end_flag):
+    im_mask = np.zeros((height,width ,3), np.uint8)
+    im_mask = cv2.rectangle(im_mask, (MASK_START_X,MASK_START_Y),(MASK_START_X + MASK_WIDTH, MASK_START_Y + MASK_HEIGHT),(255,255,255), -1)
+    im_mask = cv2.cvtColor(im_mask, cv2.COLOR_BGR2GRAY)
     # フレーム間の差分計算
     color_diff = cv2.absdiff(frame_next, frame_pre)
 
     # グレースケール変換
     gray_diff = cv2.cvtColor(color_diff, cv2.COLOR_BGR2GRAY)
 
+    #マスク
+    gray_diff_m = cv2.bitwise_and(gray_diff, im_mask)
+
     # ２値化
-    retval, black_diff = cv2.threshold(gray_diff, 30, 1, cv2.THRESH_BINARY)
+    retval, black_diff = cv2.threshold(gray_diff_m, 30, 1, cv2.THRESH_BINARY)
 
     # プロセッサ処理時間(sec)を取得
     proc_time = time.clock()
