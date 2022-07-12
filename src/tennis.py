@@ -3,6 +3,14 @@ import sys
 import numpy as np
 #import os
 
+MASK_HEIGHT = 400
+MASK_WIDTH = 350
+MASK_START_X = 1000
+MASK_START_Y = 450
+THRESHOLD = 140
+EROS_KERNEL_SIZE = 5
+DILATION_SIZE = 9
+
 
 def dilation(dilationSize, kernelSize, img):  # 膨張した画像にして返す
     kernel = np.ones((kernelSize, kernelSize), np.uint8)
@@ -12,16 +20,19 @@ def dilation(dilationSize, kernelSize, img):  # 膨張した画像にして返�
     return dilation_img
 
 
-def detect(gray_diff, thresh_diff=180, dilationSize=9, kernelSize=20):  # 一定面積以上の物体を検出
+def detect(gray_diff, thresh_diff=THRESHOLD, dilationSize=DILATION_SIZE, kernelSize=20):  # 一定面積以上の物体を検出
     retval, black_diff = cv2.threshold(
         gray_diff, thresh_diff, 255, cv2.THRESH_BINARY)  # 2値化
     dilation_img = dilation(dilationSize, kernelSize, black_diff)  # 膨張処理
     img = dilation_img.copy()
-    #image,
+    # 収縮
+    kernel = np.ones((EROS_KERNEL_SIZE, EROS_KERNEL_SIZE), np.uint8)
+    erosion = cv2.erode(dilation_img,kernel,iterations = 1)
+    
     # 境界線検出
     contours, hierarchy = cv2.findContours(
         dilation_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )  
+    )
 
     ball_pos = []
 
@@ -63,7 +74,7 @@ def blackToColor(bImage):
     return colorImage
 
 
-def run(input_video_path, output_video_path):
+def run(input_video_path, output_video_path, debug_video_path):
     video = cv2.VideoCapture(input_video_path)  # videoファイルを読み込む
     #inFourcc = cv2.VideoWriter_fourcc(*'mp4v')
     outFourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
@@ -74,9 +85,11 @@ def run(input_video_path, output_video_path):
 
     vidw = video.get(cv2.CAP_PROP_FRAME_WIDTH)
     vidh = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    print(vidw,vidh)
+    print(vidw, vidh)
     out = cv2.VideoWriter(output_video_path, outFourcc, 10.0,
-                          (int(vidw), int(vidh/2)))  # 出力先のファイルを開く
+                          (int(vidw), int(vidh)))  # 出力先のファイルを開く
+    out2 = cv2.VideoWriter(debug_video_path, outFourcc, 10.0,
+                          (int(vidw), int(vidh)))  # 出力先のファイルを開く
 
     ok, frame = video.read()  # 最初のフレームを読み込む
     if not ok:
@@ -94,26 +107,31 @@ def run(input_video_path, output_video_path):
         video.read()[1]
         video.read()[1]
         frame4 = video.read()[1]
-        #frame4 = frame.copy()
         color_diff2 = cv2.absdiff(frame4, frame_next)
-        diff = cv2.bitwise_and(color_diff,color_diff2)
-        #print(diff)
-        #gray_diff = cv2.cvtColor(color_diff, cv2.COLOR_BGR2GRAY)  # グレースケール変換
+        im_mask = np.zeros((int(vidh), int(vidw), 3), np.uint8)
+        im_mask = cv2.rectangle(im_mask, (MASK_START_X, MASK_START_Y), (
+            MASK_START_X + MASK_WIDTH, MASK_START_Y + MASK_HEIGHT), (255, 255, 255), -1)
+        im_mask = cv2.cvtColor(im_mask, cv2.COLOR_BGR2GRAY)
+        diff = cv2.bitwise_and(color_diff, color_diff2)
+        # print(diff)
+        # gray_diff = cv2.cvtColor(color_diff, cv2.COLOR_BGR2GRAY)  # グレースケール変換
         gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+        gray_diff_m = cv2.bitwise_and(gray_diff, im_mask)
         retval, black_diff = cv2.threshold(
-            gray_diff, 30, 255, cv2.THRESH_BINARY)
+            gray_diff_m, 30, 255, cv2.THRESH_BINARY)
 
-        ball, dilation_img = detect(gray_diff)
+        ball, dilation_img = detect(gray_diff_m)
 
         frame = displayCircle(frame, ball, 2)  # 丸で加工
         cImage = blackToColor(dilation_img)  # 2値化画像をカラーの配列サイズと同じにする
-        im1 = resizeImage(frame, 2, 2)
-        im2 = resizeImage(cImage, 2, 2)
-        im_h = cv2.hconcat([im1, im2])  # 画像を横方向に連結
-
-        cv2.imshow("Tracking", im_h)  # フレームを画面表示
-        out.write(im_h)
-        #print(im_h)
+        #im1 = resizeImage(frame, 2, 2)
+        #im2 = resizeImage(cImage, 2, 2)
+        # im_h = cv2.hconcat([im1, im2])  # 画像を横方向に連結
+        #cv2.rectangle(frame, (MASK_START_X, MASK_START_Y), (MASK_START_X + MASK_WIDTH, MASK_START_Y + MASK_HEIGHT), (255, 255, 255), -1)
+        cv2.imshow("Tracking", frame)  # フレームを画面表示
+        out.write(frame)
+        out2.write(cImage)
+        # print(im_h)
 
         frame_pre = frame_next.copy()  # 次のフレームの読み込み
 
@@ -126,7 +144,8 @@ def run(input_video_path, output_video_path):
 
 
 if __name__ == '__main__':
-    inputFile="test.mp4"
-    #inputFile='1.mp4'
-    outputFile="output.mp4"
-    run(inputFile, outputFile)
+    inputFile = "test.mp4"
+    # inputFile='1.mp4'
+    outputFile = "output.mp4"
+    debugFile = "debug.mp4"
+    run(inputFile, outputFile, debugFile)
