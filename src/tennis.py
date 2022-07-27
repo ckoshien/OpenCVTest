@@ -3,13 +3,15 @@ import sys
 import numpy as np
 #import os
 
-MASK_HEIGHT = 400
-MASK_WIDTH = 350
-MASK_START_X = 1000
-MASK_START_Y = 450
-THRESHOLD = 140
-EROS_KERNEL_SIZE = 5
-DILATION_SIZE = 9
+MASK_HEIGHT = 250
+MASK_WIDTH = 250
+MASK_START_X = 600
+MASK_START_Y = 100
+THRESHOLD = 100
+EROS_KERNEL_SIZE = 10
+DILATION_SIZE = 5
+DETECT_AREA_UPPER = 300
+DETECT_AREA_LOWER = 0
 
 
 def dilation(dilationSize, kernelSize, img):  # 膨張した画像にして返す
@@ -26,12 +28,14 @@ def detect(gray_diff, thresh_diff=THRESHOLD, dilationSize=DILATION_SIZE, kernelS
     dilation_img = dilation(dilationSize, kernelSize, black_diff)  # 膨張処理
     img = dilation_img.copy()
     # 収縮
-    kernel = np.ones((EROS_KERNEL_SIZE, EROS_KERNEL_SIZE), np.uint8)
-    erosion = cv2.erode(dilation_img,kernel,iterations = 1)
-    
+    if EROS_KERNEL_SIZE > 0:
+        kernel = np.ones((EROS_KERNEL_SIZE, EROS_KERNEL_SIZE), np.uint8)
+        erosion = cv2.erode(dilation_img,kernel,iterations = 1)
+    else:
+        erosion = dilation_img
     # 境界線検出
     contours, hierarchy = cv2.findContours(
-        dilation_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        erosion, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
 
     ball_pos = []
@@ -48,7 +52,9 @@ def detect(gray_diff, thresh_diff=THRESHOLD, dilationSize=DILATION_SIZE, kernelS
         y /= count
         x = int(x)
         y = int(y)
-        ball_pos.append([x, y])
+        if int(area) > DETECT_AREA_UPPER or int(area) < DETECT_AREA_LOWER :
+            break
+        ball_pos.append([x, y, area])
 
     return ball_pos, img
 
@@ -57,7 +63,9 @@ def displayCircle(image, ballList, thickness=5):
     for i in range(len(ballList)):
         x = int(ballList[i][0])
         y = int(ballList[i][1])
+        area = int(ballList[i][2])
         cv2.circle(image, (x, y), 10, (0, 0, 255), thickness)
+        cv2.putText(image, str(area), (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255))
     return image
 
 
