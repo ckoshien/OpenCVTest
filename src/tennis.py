@@ -5,12 +5,12 @@ import numpy as np
 
 MASK_HEIGHT = 250
 MASK_WIDTH = 250
-MASK_START_X = 600
+MASK_START_X = 800
 MASK_START_Y = 100
 THRESHOLD = 100
 EROS_KERNEL_SIZE = 10
 DILATION_SIZE = 5
-DETECT_AREA_UPPER = 300
+DETECT_AREA_UPPER = 3000
 DETECT_AREA_LOWER = 0
 
 
@@ -59,13 +59,15 @@ def detect(gray_diff, thresh_diff=THRESHOLD, dilationSize=DILATION_SIZE, kernelS
     return ball_pos, img
 
 
-def displayCircle(image, ballList, thickness=5):
+def displayCircle(image, ballList, thickness):
+    overlay = image.copy()
     for i in range(len(ballList)):
         x = int(ballList[i][0])
         y = int(ballList[i][1])
         area = int(ballList[i][2])
         cv2.circle(image, (x, y), 10, (0, 0, 255), thickness)
-        cv2.putText(image, str(area), (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255))
+        image = cv2.addWeighted(overlay, 0.3, image, 0.7, 0)
+        #cv2.putText(image, str(area), (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255))
     return image
 
 
@@ -130,7 +132,7 @@ def run(input_video_path, output_video_path, debug_video_path):
 
         ball, dilation_img = detect(gray_diff_m)
 
-        frame = displayCircle(frame, ball, 2)  # 丸で加工
+        frame = displayCircle(frame, ball, -1)  # 丸で加工
         cImage = blackToColor(dilation_img)  # 2値化画像をカラーの配列サイズと同じにする
         #im1 = resizeImage(frame, 2, 2)
         #im2 = resizeImage(cImage, 2, 2)
